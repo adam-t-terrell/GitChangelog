@@ -2,7 +2,7 @@
 
 namespace GitChangelog
 {
-    public class GitCommandProcessor
+    public static class GitCommandProcessor
     {
         public static string GetChangelogForAllProjects(ChangelogConfig config)
         {

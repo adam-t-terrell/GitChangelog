@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using System.Diagnostics;
+using System.Globalization;
 
 namespace GitChangelog
 {
-    public class GitChangelog
+    public static class GitChangelog
     {
         public static void Main()
         {
@@ -114,7 +114,7 @@ namespace GitChangelog
                 Console.Write(prompt);
                 string input = Console.ReadLine() ?? string.Empty;
 
-                if (DateTime.TryParse(input, out DateTime date))
+                if (DateTime.TryParse(input, new CultureInfo("en-US"), out DateTime date))
                 {
                     return date;
                 }
