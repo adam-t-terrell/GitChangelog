@@ -8,46 +8,59 @@ namespace GitChangelog
     {
         public static void Main()
         {
-            var configFilePath = "appsettings.json";
+            try {
+                var configFilePath = "appsettings.json";
 
-            if (!File.Exists(configFilePath))
-            {
-                Console.WriteLine("appsettings.json not found. Please provide configuration options:");
+                if (!File.Exists(configFilePath))
+                {
+                    Console.WriteLine("appsettings.json not found. Please provide configuration options:");
 
-                var newChangelogConfig = GetChangelogConfigFromConsole();
+                    var newChangelogConfig = GetChangelogConfigFromConsole();
 
-                // Save the provided configuration to appsettings.json
-                SaveChangelogConfigToFile(newChangelogConfig, configFilePath);
+                    // Save the provided configuration to appsettings.json
+                    SaveChangelogConfigToFile(newChangelogConfig, configFilePath);
+                }
+
+                // Load configuration from appsettings.json
+                var configuration = new ConfigurationBuilder()
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile("appsettings.json")
+                    .Build();
+
+                var changelogConfig = configuration.Get<ChangelogConfig>();
+
+                if (changelogConfig != null)
+                {
+                    Console.WriteLine($"---- Processing Changelog for all projects in {changelogConfig.RepositoriesPath} ----");
+                    string changelog = GitCommandProcessor.GetChangelogForAllProjects(changelogConfig);
+                    OutputChanges(changelog, changelogConfig.ChangelogPath, changelogConfig.OutputDestination);
+                    Console.WriteLine($"---- Done processing ----{Environment.NewLine}");
+
+                    Console.WriteLine($"---- Processing projects with pending changes in {changelogConfig.RepositoriesPath} ----");
+                    string pendingchanges = GitCommandProcessor.GetProjectsWithPendingChanges(changelogConfig);
+                    OutputChanges(pendingchanges, changelogConfig.PendingChangesPath, changelogConfig.OutputDestination);
+                    Console.WriteLine($"---- Done processing ----{Environment.NewLine}");
+
+                    Console.WriteLine($"---- Processing Recent Branches for all projects in {changelogConfig.RepositoriesPath} ----");
+                    string branchesInfo = GitCommandProcessor.GetBranchesUpdatedWithinDateRange(changelogConfig);
+                    OutputChanges(branchesInfo, changelogConfig.RecentBranchesPath, changelogConfig.OutputDestination);
+                    Console.WriteLine($"---- Done processing ----{Environment.NewLine}");
+                }
+                else
+                {
+                    Console.WriteLine("Error: ChangelogConfig is null. Please check your configuration.");
+                }
             }
-
-            // Load configuration from appsettings.json
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            var changelogConfig = configuration.Get<ChangelogConfig>();
-
-            if (changelogConfig != null)
+            catch (InvalidOperationException)
             {
-                Console.WriteLine($"---- Processing Changelog for all projects in {changelogConfig.RepositoriesPath} ----");
-                string changelog = GitCommandProcessor.GetChangelogForAllProjects(changelogConfig);
-                OutputChanges(changelog, changelogConfig.ChangelogPath, changelogConfig.OutputDestination);
-                Console.WriteLine($"---- Done processing ----{Environment.NewLine}");
-
-                Console.WriteLine($"---- Processing projects with pending changes in {changelogConfig.RepositoriesPath} ----");
-                string pendingchanges = GitCommandProcessor.GetProjectsWithPendingChanges(changelogConfig);
-                OutputChanges(pendingchanges, changelogConfig.PendingChangesPath, changelogConfig.OutputDestination);
-                Console.WriteLine($"---- Done processing ----{Environment.NewLine}");
-
-                Console.WriteLine($"---- Processing Recent Branches for all projects in {changelogConfig.RepositoriesPath} ----"); 
-                string branchesInfo = GitCommandProcessor.GetBranchesUpdatedWithinDateRange(changelogConfig);
-                OutputChanges(branchesInfo, changelogConfig.RecentBranchesPath, changelogConfig.OutputDestination);
-                Console.WriteLine($"---- Done processing ----{Environment.NewLine}");
+                Console.WriteLine($"Error getting the data from appsettings.json.{Environment.NewLine}You should probably edit appsettings.json ;)");
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Error: ChangelogConfig is null. Please check your configuration.");
+                Console.WriteLine($"Exception of type {ex.GetType().FullName} occurred.");
+                Console.WriteLine($"Message: {ex.Message}");
+                Console.WriteLine($"InnerException: {ex.InnerException}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
             }
 
             WaitForExit();
